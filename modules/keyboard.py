@@ -36,11 +36,18 @@ async def switch():
 	if db.check_new_user_admin() == 'False':
 		new_user_message_state = InlineKeyboardButton('✅ВКЛ', callback_data='new_user_message_off/on')
 
+	referal_system = InlineKeyboardButton('👥 Реферальная система', callback_data='none')
+
+	if db.check_referal_system_admin() == 'True':
+		referal_system_state = InlineKeyboardButton('🛑ВЫКЛ', callback_data='referal_system_off/on')
+	if db.check_referal_system_admin() == 'False':
+		referal_system_state = InlineKeyboardButton('✅ВКЛ', callback_data='referal_system_off/on')
+
 
 
 	back = InlineKeyboardButton('🔙Назад', callback_data='back')
 
 
 	markup = InlineKeyboardMarkup()
-	return markup.add(meet_message, meet_message_state).add(new_user_message, new_user_message_state).add(back)
+	return markup.add(meet_message, meet_message_state).add(new_user_message, new_user_message_state).add(referal_system, referal_system_state).add(back)
 

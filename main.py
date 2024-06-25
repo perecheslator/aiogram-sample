@@ -78,16 +78,28 @@ async def send_messag(message: types.Message, state: FSMContext):
 
 	await state.finish()
 
+def ref(msg):
+	print(msg.text)
+	try:
+		a = msg.text.split(' ')
+		return a[1]
+	except:
+		return 'ERROR REF'
+
 @dp.message_handler(commands=['start'])
 @dp.throttled(anti_flood,rate=0.01)
 async def start(msg: types.Message):
+	
+
 	if db.main(msg) is None:
 		if db.check_new_user_admin() == 'True':
 			await bot.send_message(config.admin, f'Новый пользователь в боте @{msg.chat.username}')
+			
 		else:
 			pass
 
 	db.main(msg)
+	db.add_ref(msg.chat.id, ref(msg), msg)
 	
 	await msg.answer('Привет🌀')
 	if config.admin == msg.chat.id:
@@ -138,6 +150,15 @@ async def switch_call(call: types.CallbackQuery, state: FSMContext):
 	msg = call.message
 
 	await msg.delete()
+	await msg.answer('Выберете действие', reply_markup=await keyboard.switch())
+
+@dp.callback_query_handler(text = 'referal_system_off/on')
+async def referal_system_oof_on_call(call: types.CallbackQuery, state: FSMContext):
+	msg = call.message
+
+	await msg.delete()
+
+	db.change_referal_system()
 	await msg.answer('Выберете действие', reply_markup=await keyboard.switch())
 
 @dp.callback_query_handler(text = 'meet_message_off/on')

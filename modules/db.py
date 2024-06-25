@@ -74,3 +74,41 @@ def change_new_user_admin():
 			c.execute('UPDATE admin_settings SET new_user = ? WHERE new_user = ?', ('True', 'False'))
 
 		return 0
+	
+def check_referal_system_admin():
+	with s.connect('modules/db.db') as db:
+		c = db.cursor()
+
+		check = c.execute('SELECT * FROM admin_settings').fetchall()[0][2]
+
+		return check
+
+def add_ref(id, ref, msg):
+	print(ref)
+	if main(msg)[1] == 'None':
+		print('Записываю реферала')		
+
+
+		with s.connect('modules/db.db') as db:
+			c = db.cursor()
+			print(id)
+			c.execute('UPDATE users SET ref = ? WHERE id = ?', (ref, id))
+			print('OK')
+	else:
+		print('else')
+		pass
+
+	return 0
+
+def change_referal_system():
+	with s.connect('modules/db.db') as db:
+		c = db.cursor()
+
+		check = c.execute('SELECT * FROM admin_settings').fetchall()[0][2]
+
+		if check == 'True':
+			c.execute('UPDATE admin_settings SET referals_system = ? WHERE referals_system = ?', ('False', 'True'))
+		if check == 'False':
+			c.execute('UPDATE admin_settings SET referals_system = ? WHERE referals_system = ?', ('True', 'False'))
+
+		return 0
