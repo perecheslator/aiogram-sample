@@ -22,22 +22,65 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.utils.exceptions import Throttled
+from aiogram.contrib.middlewares.logging import LoggingMiddleware
 
 from aiogram.types import InputFile 
 
-import sqlite3, datetime, asyncio, random
+import sqlite3, datetime, asyncio, random, time
 from modules import keyboard, db, config, img
 
-
-bot = Bot(token=config.TOKEN, parse_mode='HTML')
+db.start_bot()
+bot = Bot(token='7740946392:AAHHXuYP4Zav1VRCdrsIFFbPS79ah-K0vqU', parse_mode='HTML')
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 
 
-async def anti_flood(*args, **kwargs):
-	m = args[0]
-	await m.answer("⚠Не так быстро!")
+user_message_data = {}
+SPAM_LIMIT = 5  # Максимум сообщений за период
+SPAM_TIME_FRAME = 10  # Временное окно (в секундах)
+BLOCK_TIME = 2  # Время блокировки (в секундах)
+blocked_users = {}
 
+
+ADMINS = db.admins_in_db()
+
+async def check_spam(message: types.Message):
+    
+    user_id = message.from_user.id
+
+    if db.check_repeat_ban(user_id) is not None:
+        return True
+    else:
+        current_time = time.time()
+
+        
+        if user_id in blocked_users:
+            if current_time < blocked_users[user_id]:
+                return True
+            else:
+                del blocked_users[user_id] 
+
+        
+        if user_id not in user_message_data:
+            user_message_data[user_id] = []
+
+        
+        user_message_data[user_id] = [
+            timestamp for timestamp in user_message_data[user_id]
+            if current_time - timestamp < SPAM_TIME_FRAME
+        ]
+
+        
+        user_message_data[user_id].append(current_time)
+
+        
+        if len(user_message_data[user_id]) > SPAM_LIMIT:
+            blocked_users[user_id] = current_time + BLOCK_TIME
+            for admin_id in ADMINS:
+                await bot.send_message(admin_id, f'хуесос спамит - <code>{message.chat.id}</code>')
+            return True
+
+        return False
 
 
 class Send(StatesGroup):
@@ -87,22 +130,24 @@ def ref(msg):
 		return 'ERROR REF'
 
 @dp.message_handler(commands=['start'])
-@dp.throttled(anti_flood,rate=0.01)
 async def start(msg: types.Message):
-	
+	if await check_spam(msg):
+		return
 
 	if db.main(msg) is None:
 		if db.check_new_user_admin() == 'True':
-			await bot.send_message(config.admin, f'Новый пользователь в боте @{msg.chat.username}')
+			for admin_id in ADMINS:
+				await bot.send_message(admin_id, f'Новый пользователь в боте @{msg.chat.username}')
+				return True
 			
 		else:
 			pass
 
 	db.main(msg)
-	db.add_ref(msg.chat.id, ref(msg), msg)
+	#db.add_ref(msg.chat.id, ref(msg), msg)
 	
 	await msg.answer('Привет🌀')
-	if config.admin == msg.chat.id:
+	if msg.chat.id in ADMINS:
 		if db.check_meet_admin()[0][0] == 'True':	
 			await msg.answer('Выберете действие', reply_markup = await keyboard.admin_panel())
 		else:
@@ -110,9 +155,8 @@ async def start(msg: types.Message):
 
 
 @dp.message_handler(commands=['admin'])
-@dp.throttled(anti_flood,rate=0.01)
 async def admin_panel(msg: types.Message):
-	if config.admin != msg.chat.id:
+	if msg.chat.id in ADMINS:
 		pass
 	else:
 		await msg.answer('Выберете действие', reply_markup = await keyboard.admin_panel())
@@ -122,7 +166,7 @@ async def count_users_admin(call: types.CallbackQuery, state: FSMContext):
 	msg = call.message
 	await msg.delete()
 
-	if msg.chat.id == config.admin:
+	if msg.chat.id in ADMINS:
 		await msg.answer(db.all_count()[0][0])
 	else:
 		pass
@@ -133,7 +177,8 @@ async def newsletter_admin_call(call: types.CallbackQuery, state: FSMContext):
 	msg = call.message
 	await msg.delete()
 
-	if msg.chat.id == config.admin:
+	if msg.chat.id in ADMINS:
+
 		await Send.msg.set()
 		await msg.answer('Введите сообщение \n\n/close для отмены')
 	else:
