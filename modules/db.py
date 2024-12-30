@@ -1,5 +1,60 @@
 import sqlite3 as s
 
+
+def start_bot():
+	print('Проверка базы данных')
+	with s.connect('modules/db.db') as db:
+		c = db.cursor()
+		c.execute('''
+			CREATE TABLE IF NOT EXISTS users (
+				id INT,
+				agree TEXT
+			)
+		''')
+		c.execute('''
+			CREATE TABLE IF NOT EXISTS admins (id INT)
+			''')
+		c.execute('''
+			CREATE TABLE IF NOT EXISTS ban (
+				id INT)
+			''')
+		c.execute('''
+			CREATE TABLE IF NOT EXISTS admin_settings (
+				meet TEXT,
+				new_user TEXT,
+				referals_system TEXT 
+			
+			)
+			''')
+
+def admin_add(id):
+    with s.connect('modules/db.db') as db:
+        c = db.cursor()
+        c.execute("INSERT INTO admins(id) VALUES (?)", (id, ))
+def admin_remove(id):
+    with s.connect('modules/db.db') as db:
+        c = db.cursor()
+        c.execute("DELETE FROM admins WHERE id = ?", (id, ))
+def check_repeat_admin(id):
+    with s.connect('modules/db.db') as db:
+        c = db.cursor()
+        info = c.execute("SELECT id FROM admins WHERE id=?", (id, )).fetchone()
+        return info
+def ban_user_db(id):
+    with s.connect('modules/db.db') as db:
+        c = db.cursor()
+        c.execute("INSERT INTO ban(id) VALUES (?)", (id, ))
+def remove_ban_db(id):
+    with s.connect('modules/db.db') as db:
+        c = db.cursor()
+        c.execute("DELETE FROM ban WHERE id = ?", (id, ))
+def check_repeat_ban(id):
+    with s.connect('modules/db.db') as db:
+        c = db.cursor()
+        info = c.execute("SELECT id FROM ban WHERE id=?", (id, )).fetchone()
+        return info
+
+
 def main(msg):
 	with s.connect('modules/db.db') as db:
 		c = db.cursor()
@@ -12,6 +67,17 @@ def main(msg):
 			pass
 
 		return info
+
+def admins_in_db():
+    with s.connect('modules/db.db') as db:
+        c = db.cursor()
+        c.execute('SELECT id FROM admins')
+
+        rows = c.fetchall()
+        column_data = [row[0] for row in rows]
+
+        return column_data
+
 
 def all():
 	with s.connect('modules/db.db') as db:
