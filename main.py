@@ -30,7 +30,7 @@ import sqlite3, datetime, asyncio, random, time
 from modules import keyboard, db, config, img
 
 db.start_bot()
-bot = Bot(token='7740946392:AAHHXuYP4Zav1VRCdrsIFFbPS79ah-K0vqU', parse_mode='HTML')
+bot = Bot(token=config.TOKEN, parse_mode='HTML')
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 
